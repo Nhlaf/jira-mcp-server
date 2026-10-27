@@ -1,0 +1,117 @@
+{
+  "info": {
+    "_postman_id": "70ad965b-8dde-4197-af07-d60cfaf462cb",
+    "name": "Jira MCP Agent API",
+    "description": "Health, Jira MCP tool catalog, and session-aware chat requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "sessionId",
+      "value": "jira-postman-session"
+    },
+    {
+      "key": "issueKey",
+      "value": "ABC-123"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"returns HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"reports healthy\", function () { pm.expect(pm.response.json().status).to.eql(\"ok\"); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jira tool catalog",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/tools",
+          "host": ["{{baseUrl}}"],
+          "path": ["tools"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"returns HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"lists Jira tools\", function () {",
+              "    const names = pm.response.json().tools.map(function (tool) { return tool.name; });",
+              "    [\"get_issue_details\", \"search_issues\", \"create_issue\", \"transition_issue\", \"add_comment\"].forEach(function (name) {",
+              "        pm.expect(names).to.include(name);",
+              "    });",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat with Jira",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Look up Jira issue {{issueKey}} and summarize its current status.\",\n  \"session_id\": \"{{sessionId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/chat",
+          "host": ["{{baseUrl}}"],
+          "path": ["chat"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"returns HTTP 200\", function () { pm.response.to.have.status(200); });",
+              "pm.test(\"returns answer and session ID\", function () {",
+              "    const body = pm.response.json();",
+              "    pm.expect(body.answer).to.be.a(\"string\").and.not.empty;",
+              "    pm.expect(body.session_id).to.eql(pm.collectionVariables.get(\"sessionId\"));",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

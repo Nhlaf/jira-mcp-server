@@ -1,0 +1,5 @@
+groq
+fastmcp
+fastapi
+uvicorn[standard]
+python-dotenv
